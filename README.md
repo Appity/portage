@@ -41,6 +41,7 @@ Async do
     # Some blocking task
   end.wait
 end
+```
 
 ## Development
 
