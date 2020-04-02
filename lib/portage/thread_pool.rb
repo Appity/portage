@@ -23,34 +23,39 @@ class Portage::ThreadPool
       Thread.new do
         Thread.abort_on_exception = true
         
-        while ((proc, task) = @queue.pop)
-          begin
-            result = proc.call
-  
-          rescue => e
-            e
-          end
+        while (proc = @queue.pop)
+          proc.call
         end
       end
     end
   end
 
+  def exec(&block)
+    @queue << -> do
+      block.call
+    end
+  end
+
   # Call #task inside the same reactor to define an Async::Task
-  def task(**options, &block)
+  def task(annotate: nil, &block)
     notification = Async::Notification.new
 
-    task = Async do
-      case (result = notification.wait)
-      when Exception
-        raise result
-      else
-        result
-      end
+    task = Async do |t|
+      t.annotate(annotate) if (annotate)
+
+      notification.wait
     end
 
     @queue << -> do
-      task.reactor << Async::Notification::Signal.new([ task.fiber ], block.call)
-      task.reactor.wakeup
+      result = begin
+        block.call(task)
+
+      rescue => e
+        e
+      end
+
+      @reactor << Async::Notification::Signal.new([ task.fiber ], result)
+      @reactor.wakeup
     end
 
     task

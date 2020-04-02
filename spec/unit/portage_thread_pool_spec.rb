@@ -1,4 +1,7 @@
 RSpec.describe Portage::ThreadPool, type: :reactor, timeout: 1 do
+  class ExampleException < StandardError
+  end
+
   it 'will attach to the default reactor' do
     pool = Portage::ThreadPool.new
   
@@ -8,6 +11,72 @@ RSpec.describe Portage::ThreadPool, type: :reactor, timeout: 1 do
   it 'can be attached to a specific reactor' do
     pool = Portage::ThreadPool.new(reactor: reactor)
   
+    pool.wait
+  end
+
+  it 'can return the result of the operation' do
+    pool = Portage::ThreadPool.new
+    thread = Thread.current
+
+    task = pool.task do |task|
+      :value
+    end
+
+    result = task.wait
+
+    expect(result).to eq(:value)
+
+  ensure
+    pool.wait
+  end
+
+  it 'can raise exceptions' do
+    pool = Portage::ThreadPool.new
+    thread = Thread.current
+
+    task = pool.task(annotate: 'raise') do |task|
+      raise ExampleException
+    end
+
+    expect { task.wait }.to raise_exception(ExampleException)
+
+  ensure
+    pool.wait
+  end
+
+  it 'can annotate the wrapper task' do
+    pool = Portage::ThreadPool.new
+    task_captured = nil
+
+    task = pool.task(annotate: 'example') do |t|
+      task_captured = t
+      :value
+    end
+
+    expect(task.annotation).to eq('example')
+
+    result = task.wait
+
+    expect(task_captured).to be(task)
+    expect(result).to eq(:value)
+
+  ensure
+    pool.wait
+  end
+
+  it 'can execute without waiting' do
+    pool = Portage::ThreadPool.new
+    executed = false
+
+    pool.exec do
+      executed = true
+    end
+
+    sleep(0.001)
+
+    expect(executed).to be(true)
+
+  ensure
     pool.wait
   end
 
