@@ -7,8 +7,8 @@ module Portage
   
 end
 
+require_relative 'portage/bridge'
 require_relative 'portage/extensions'
-require_relative 'portage/queue'
 require_relative 'portage/thread_pool'
 
 require 'async'

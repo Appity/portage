@@ -1,33 +1,27 @@
-require 'async/queue'
-
-class Portage::Queue
+class Portage::Bridge::Operation
   # == Constants ============================================================
   
   # == Extensions ===========================================================
   
   # == Properties ===========================================================
 
-  attr_reader :reactor
-
   # == Class Methods ========================================================
   
   # == Instance Methods =====================================================
-  
-  def initialize(task: nil)
-    task ||= Async::Task.current
-    @reactor = task.reactor
+
+  # NOTE: This may be more efficient as a Proc wrapper with Fiber-compatible
+  #       methods attached.
+  def initialize(&block)
+    @block = block
   end
 
-  def async(&block)
-    if (Async::Task.current?)
-      Async do
-        yield
-      end
-    else
-      @reactor << Operation.new(&block)
-      @reactor.wakeup
+  def alive?
+    true
+  end
+
+  def resume
+    Async do
+      @block.call
     end
   end
 end
-
-require_relative 'queue/operation'
