@@ -14,7 +14,8 @@ class Portage::ThreadPool
   # == Instance Methods =====================================================
   
   def initialize(reactor: nil, size: nil)
-    @reactor = reactor || Async::Task.current.reactor
+    @task = Async::Task.current
+    @reactor = reactor || @task.reactor
     size ||= SIZE_DEFAULT
 
     @queue = Queue.new
@@ -37,28 +38,22 @@ class Portage::ThreadPool
   end
 
   # Call #task inside the same reactor to define an Async::Task
-  def task(annotate: nil, &block)
-    notification = Async::Notification.new
-
-    task = Async do |t|
-      t.annotate(annotate) if (annotate)
-
-      notification.wait
-    end
+  def async(&block)
+    notification = Portage::Notification.new
 
     @queue << -> do
       result = begin
-        block.call(task)
+        block.call
 
       rescue => e
         e
       end
 
-      @reactor << Async::Notification::Signal.new([ task.fiber ], result)
+      notification.signal(result, task: @task)
       @reactor.wakeup
     end
 
-    task
+    notification
   end
 
   def wait

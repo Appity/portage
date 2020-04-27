@@ -18,11 +18,11 @@ RSpec.describe Portage::ThreadPool, type: :reactor, timeout: 1 do
     pool = Portage::ThreadPool.new
     thread = Thread.current
 
-    task = pool.task do |task|
+    notification = pool.async do
       :value
     end
 
-    result = task.wait
+    result = notification.wait
 
     expect(result).to eq(:value)
 
@@ -34,31 +34,11 @@ RSpec.describe Portage::ThreadPool, type: :reactor, timeout: 1 do
     pool = Portage::ThreadPool.new
     thread = Thread.current
 
-    task = pool.task(annotate: 'raise') do |task|
-      raise ExampleException
-    end
-
-    expect { task.wait }.to raise_exception(ExampleException)
-
-  ensure
-    pool.wait
-  end
-
-  it 'can annotate the wrapper task' do
-    pool = Portage::ThreadPool.new
-    task_captured = nil
-
-    task = pool.task(annotate: 'example') do |t|
-      task_captured = t
-      :value
-    end
-
-    expect(task.annotation).to eq('example')
-
-    result = task.wait
-
-    expect(task_captured).to be(task)
-    expect(result).to eq(:value)
+    expect do
+      pool.async do
+        raise ExampleException
+      end.wait
+    end.to raise_exception(ExampleException)
 
   ensure
     pool.wait
@@ -80,15 +60,15 @@ RSpec.describe Portage::ThreadPool, type: :reactor, timeout: 1 do
     pool.wait
   end
 
-  it 'can perform simple tasks in a separate thread' do
+  it 'can perform simple notifications in a separate thread' do
     pool = Portage::ThreadPool.new
     thread = Thread.current
 
-    task = pool.task do |task|
+    notification = pool.async do
       Thread.current != thread and :return_value
     end
 
-    result = task.wait
+    result = notification.wait
 
     expect(result).to eq(:return_value)
 
@@ -96,35 +76,35 @@ RSpec.describe Portage::ThreadPool, type: :reactor, timeout: 1 do
     pool.wait
   end
 
-  it 'can perform a number tasks in quick succession' do
+  it 'can perform a number notifications in quick succession' do
     pool = Portage::ThreadPool.new
     thread = Thread.current
     count = 1000
 
-    tasks = count.times.map do |i|
-      pool.task do
+    notifications = count.times.map do |i|
+      pool.async do
         Thread.current != thread and i
       end
     end
 
-    expect(tasks.map(&:wait)).to eq((0...count).to_a)
+    expect(notifications.map(&:wait)).to eq((0...count).to_a)
 
   ensure
     pool.wait
   end
 
-  it 'can perform several blocking tasks simultaneously' do
+  it 'can perform several blocking notifications simultaneously' do
     pool = Portage::ThreadPool.new(size: 25)
     count = 25
 
-    tasks = count.times.map do |i|
-      pool.task do
+    notifications = count.times.map do |i|
+      pool.async do
         sleep(0.2)
         i
       end
     end
 
-    expect(tasks.map(&:wait)).to eq((0...count).to_a)
+    expect(notifications.map(&:wait)).to eq((0...count).to_a)
 
   ensure
     pool.wait

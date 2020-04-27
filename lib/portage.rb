@@ -9,6 +9,7 @@ end
 
 require_relative 'portage/bridge'
 require_relative 'portage/extensions'
+require_relative 'portage/notification'
 require_relative 'portage/thread_pool'
 
 require 'async'
