@@ -27,8 +27,8 @@ class Portage::Bridge
       queue = Queue.new
 
       @reactor << Operation.new do
-        queue << Async do
-          block.call
+        queue << Async do |task|
+          block.call(task)
         end.wait
       end
 

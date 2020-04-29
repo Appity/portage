@@ -13,7 +13,9 @@ RSpec.describe Portage::Bridge, type: :reactor, timeout: 1 do
       expect(Async::Task).to_not be_current
 
       count.times do |i|
-        list << bridge.async do
+        list << bridge.async do |task|
+          task.sleep(0.00001)
+
           i
         end
       end
