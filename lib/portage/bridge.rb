@@ -24,8 +24,17 @@ class Portage::Bridge
         yield
       end
     else
-      @reactor << Operation.new(&block)
+      queue = Queue.new
+
+      @reactor << Operation.new do
+        queue << Async do
+          block.call
+        end.wait
+      end
+
       @reactor.wakeup
+
+      queue.pop
     end
   end
 end
