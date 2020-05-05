@@ -20,8 +20,6 @@ class Portage::Bridge::Operation
   end
 
   def resume
-    Async do
-      @block.call
-    end
+    @block.call
   end
 end
