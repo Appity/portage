@@ -12,7 +12,7 @@ module Portage::ThreadTask
     parent ||= Async::Task.current
     reactor ||= parent&.reactor
 
-    Async do |task|
+    parent.async do |task|
       if (annotate)
         task.annotate(annotate)
       end

@@ -20,16 +20,14 @@ class Portage::Bridge
 
   def async(&block)
     if (Async::Task.current?)
-      Async do
-        yield
-      end
+      yield(Async::Task.current)
     else
       queue = Queue.new
 
       @reactor << Operation.new do
-        queue << Async do |task|
-          block.call(task)
-        end.wait
+        @reactor.async do |task|
+          queue << block.call(task)
+        end
       end
 
       @reactor.wakeup

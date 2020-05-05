@@ -14,8 +14,7 @@ RSpec.describe Portage::Bridge, type: :reactor, timeout: 1 do
 
       count.times do |i|
         list << bridge.async do |task|
-          task.sleep(0.00001)
-
+          task.sleep(0.000001)
           i
         end
       end
@@ -28,5 +27,19 @@ RSpec.describe Portage::Bridge, type: :reactor, timeout: 1 do
     signal.wait
 
     expect(list).to eq((0...count).to_a)
+  end
+
+  it 'will bridge into the same reactor' do
+    bridge = Portage::Bridge.new
+    signal = Async::Notification.new
+
+    Thread.new do
+      bridge.async do |task|
+        expect(task.reactor.object_id).to eq(reactor.object_id)
+        signal.signal
+      end
+    end
+
+    signal.wait
   end
 end
