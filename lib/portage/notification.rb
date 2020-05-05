@@ -11,7 +11,7 @@ class Portage::Notification < Async::Condition
   
   # Signal to a given task that it should resume operations.
   # @return [void]
-  def signal(value = nil, task: Task.current)
+  def signal(value = nil, task: Async::Task.current)
     @value = value
 
     return if (@waiting.empty?)
@@ -36,7 +36,7 @@ class Portage::Notification < Async::Condition
     
     def resume
       waiting.each do |fiber|
-        fiber.resume(value) if fiber.alive?
+        fiber.resume(value) if (fiber.alive?)
       end
     end
   end

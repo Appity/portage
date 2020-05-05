@@ -8,12 +8,6 @@ RSpec.describe Portage::ThreadPool, type: :reactor, timeout: 1 do
     pool.wait
   end
 
-  it 'can be attached to a specific reactor' do
-    pool = Portage::ThreadPool.new(reactor: reactor)
-  
-    pool.wait
-  end
-
   it 'can return the result of the operation' do
     pool = Portage::ThreadPool.new
     thread = Thread.current
