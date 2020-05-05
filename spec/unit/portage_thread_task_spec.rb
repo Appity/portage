@@ -6,7 +6,7 @@ RSpec.describe Portage::ThreadTask, type: :reactor do
     it 'given a block to execute' do
       parent_thread = Thread.current
 
-      result = Portage::ThreadTask.new do
+      result = Portage::ThreadTask.async do
         Thread.current != parent_thread
       end.wait
 
@@ -14,11 +14,20 @@ RSpec.describe Portage::ThreadTask, type: :reactor do
     end
 
     it 'given a block that raises an exception' do
-      task = Portage::ThreadTask.new do
+      task = Portage::ThreadTask.async do
         raise CustomException, 'test'
       end
 
       expect { task.wait }.to raise_exception(CustomException)
+    end
+
+    it 'given a block and an annotation' do
+      task = Portage::ThreadTask.async(annotate: 'example_task') do
+        :example
+      end
+
+      expect(task.annotation).to eq('example_task')
+      expect(task.wait).to be(:example)
     end
   end
 end

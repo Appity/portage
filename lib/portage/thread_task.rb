@@ -1,21 +1,20 @@
 require 'async/condition'
 require 'async/task'
 
-class Portage::ThreadTask
+module Portage::ThreadTask
   # == Constants ============================================================
   
   # == Extensions ===========================================================
   
-  # == Properties ===========================================================
-  
-  # == Class Methods ========================================================
-  
-  # == Instance Methods =====================================================
+  # == Module Methods =======================================================
 
-  def initialize(annotate: nil)
-    @task = Async do |task|
+  def async(parent: nil, annotate: nil, logger: nil)
+    parent ||= Async::Task.current
+    reactor ||= parent&.reactor
+
+    Async do |task|
       if (annotate)
-        task.annotation = annotate
+        task.annotate(annotate)
       end
 
       condition = Async::Condition.new
@@ -29,13 +28,11 @@ class Portage::ThreadTask
 
         task.reactor << Async::Notification::Signal.new([ task.fiber ], result)
         task.reactor.wakeup
-      end.join
+      end
 
       condition.wait
     end
   end
 
-  def wait
-    @task.wait
-  end
+  extend self
 end
