@@ -30,7 +30,55 @@ gem install portage
 
 ## Usage
 
-Within an Async application:
+There are several tools provided by Portage to handle bridging between
+Thread and Async code.
+
+### Creating a Thread task within Async code
+
+To create a one-off Thread and wait for the result of that execution use
+`Portage::ThreadTask.async`:
+
+```ruby
+Async do
+  thread_task = Portage::ThreadTask.async do
+    # This is executed in another thread, but the return value will be
+    # passed back. Any generated exceptions are re-raised on #wait
+    :example
+  end
+
+  thread_task.wait
+  # => :example
+end
+```
+
+### Injecting an Async task into a running Reactor from a Thread
+
+```ruby
+Async do |task|
+  Thread.new do
+    bridge = Portage::Bridge.new(task: task)
+
+    # async will initiate an Aync task in the same reactor and block
+    # the thread while waiting for it to be completed.
+    result = bridge.async do |bridge_task|
+      bridge_task.sleep(0.1)
+
+      :example
+    end
+
+    result
+    # => :example
+  end
+
+  task.sleep(0.2)
+end
+```
+
+### Using a Thread Pool for repeated work
+
+Where a lot of threaded tasks need to be off-loaded, using a thread pool is
+more efficient as the cost of creating the thread is better amortized, and
+the thread pool itself limits concurrency:
 
 ```ruby
 Async do
@@ -39,7 +87,9 @@ Async do
 
   pool.task do
     # Some blocking task
+    :example
   end.wait
+  # => :example
 end
 ```
 
