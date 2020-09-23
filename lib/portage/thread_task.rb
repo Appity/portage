@@ -3,12 +3,12 @@ require 'async/task'
 
 module Portage::ThreadTask
   # == Constants ============================================================
-  
+
   # == Extensions ===========================================================
-  
+
   # == Module Methods =======================================================
 
-  def async(parent: nil, annotate: nil, logger: nil)
+  def async(parent: nil, annotate: nil, logger: nil, threads: [ ])
     parent ||= Async::Task.current
     reactor ||= parent&.reactor
 
@@ -19,7 +19,7 @@ module Portage::ThreadTask
 
       condition = Async::Condition.new
 
-      Thread.new do
+      threads << Thread.new do
         result = begin
           yield
         rescue Object => e
